@@ -1,7 +1,8 @@
 [phases.setup]
 cacheDirectories = ["/root/.cache/pip"]
 commands = [
-    "apt-get update"
+    "apt-get update",
+    "apt-get install -y --no-install-recommends python3-dev gcc"
 ]
 
 [phases.install]
@@ -10,4 +11,7 @@ commands = [
 ]
 
 [phases.build]
-commands = []  # No separate build phase needed
+commands = []
+
+[start]
+command = "python -m uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"
