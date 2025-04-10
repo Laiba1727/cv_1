@@ -12,6 +12,14 @@ from dotenv import load_dotenv
 import magic
 import requests
 from typing import Optional
+import sys
+import subprocess
+
+# Ensure essential build tools are available
+try:
+    import distutils  # noqa
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "setuptools"])
 
 # Load environment variables
 load_dotenv()
