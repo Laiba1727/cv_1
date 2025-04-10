@@ -1,0 +1,15 @@
+[phases.setup]
+cacheDirectories = [
+    "/root/.cache/pip",
+    ".pip_cache"
+]
+
+[phases.install]
+cacheDirectories = [
+    "/opt/venv"
+]
+
+[phases.build]
+cacheDirectories = [
+    "/tmp/build"
+]
