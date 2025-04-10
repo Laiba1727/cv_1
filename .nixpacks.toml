@@ -1,8 +1,7 @@
 [phases.setup]
 cacheDirectories = ["/root/.cache/pip"]
 commands = [
-    "apt-get update",
-    "apt-get install -y --no-install-recommends libmagic1"
+    "apt-get update"
 ]
 
 [phases.install]
