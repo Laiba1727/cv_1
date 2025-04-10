@@ -9,17 +9,25 @@ import os
 import io
 import uvicorn
 from dotenv import load_dotenv
-import magic
 import requests
 from typing import Optional
 import sys
 import subprocess
+import zipfile
 
 # Ensure essential build tools are available
 try:
     import distutils  # noqa
 except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "setuptools"])
+
+# Try to import magic with fallback
+try:
+    import magic
+    from magic import Magic
+    USE_MAGIC = True
+except ImportError:
+    USE_MAGIC = False
 
 # Load environment variables
 load_dotenv()
@@ -58,8 +66,25 @@ def extract_text_from_docx(file_content: bytes):
         return f"Error reading DOCX: {e}"
 
 def get_mime_type(file_content: bytes):
-    mime = magic.Magic(mime=True)
-    return mime.from_buffer(file_content)
+    if USE_MAGIC:
+        try:
+            mime = Magic(mime=True)
+            return mime.from_buffer(file_content)
+        except:
+            pass
+    
+    # Fallback detection
+    if file_content.startswith(b'%PDF'):
+        return 'application/pdf'
+    elif file_content.startswith(b'PK\x03\x04'):
+        try:
+            with io.BytesIO(file_content) as f:
+                with zipfile.ZipFile(f) as z:
+                    if 'word/document.xml' in z.namelist():
+                        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        except:
+            pass
+    return 'application/octet-stream'
 
 def analyze_resume(file_content: bytes, target_company: str, interview_type: str):
     if not file_content:
