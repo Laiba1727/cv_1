@@ -2,10 +2,11 @@
   "build": {
     "builder": "NIXPACKS",
     "config": {
-      "installCommand": "pip install -r requirements.txt"
+      "installCommand": "pip install --no-cache-dir -r requirements.txt",
+      "buildCommand": "python -m pip install --upgrade pip setuptools wheel"
     }
   },
   "deploy": {
-    "startCommand": "python main.py"
+    "startCommand": "python app.py"
   }
 }
