@@ -1,8 +1,5 @@
 {
   "build": {
-    "builder": "NIXPACKS",
-    "config": {
-      "installCommand": "python -m pip install --user --no-cache-dir -r requirements.txt"
-    }
+    "builder": "NIXPACKS"
   }
 }
