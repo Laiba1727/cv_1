@@ -1,15 +1,14 @@
 [phases.setup]
-cacheDirectories = [
-    "/root/.cache/pip",
-    ".pip_cache"
+cacheDirectories = ["/root/.cache/pip"]
+commands = [
+    "apt-get update",
+    "apt-get install -y --no-install-recommends libmagic1"
 ]
 
 [phases.install]
-cacheDirectories = [
-    "/opt/venv"
+commands = [
+    "python -m pip install --user --no-cache-dir -r requirements.txt"
 ]
 
 [phases.build]
-cacheDirectories = [
-    "/tmp/build"
-]
+commands = []  # No separate build phase needed
