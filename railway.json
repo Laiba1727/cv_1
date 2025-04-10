@@ -2,8 +2,7 @@
   "build": {
     "builder": "NIXPACKS",
     "config": {
-      "installCommand": "pip install --cache-dir .pip_cache -r requirements.txt",
-      "buildCommand": "apt-get update && apt-get install -y --no-install-recommends libmagic1"
+      "installCommand": "python -m pip install --user --no-cache-dir -r requirements.txt"
     }
   }
 }
