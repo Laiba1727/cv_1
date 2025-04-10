@@ -3,7 +3,7 @@
     "builder": "NIXPACKS",
     "config": {
       "installCommand": "pip install --no-cache-dir -r requirements.txt",
-      "buildCommand": "python -m pip install --upgrade pip setuptools wheel"
+      "buildCommand": "apt-get update && apt-get install -y libmagic1 && python -m pip install --upgrade pip setuptools wheel"
     }
   },
   "deploy": {
