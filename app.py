@@ -150,19 +150,15 @@ def create_gradio_interface():
             test_api_btn.click(fn=test_api, outputs=api_output)
 
     return interface
-
-# Railway-optimized launch
+# Replace the launch section at the bottom with:
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    
-    # Only launch Gradio in development mode
-    if not os.getenv("RAILWAY_ENVIRONMENT"):
+    if os.getenv("RAILWAY_ENVIRONMENT"):
+        uvicorn.run("app:app", host="0.0.0.0", port=port)
+    else:
         gradio_interface = create_gradio_interface()
         gradio_interface.launch(
             server_name="0.0.0.0",
             server_port=port,
             share=False
         )
-    else:
-        # In production, just run FastAPI
-        uvicorn.run(app, host="0.0.0.0", port=port)
