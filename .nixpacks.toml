@@ -1,8 +1,8 @@
 [phases.setup]
-cacheDirectories = ["/root/.cache/pip"]
+cacheDirectories = ["/root/.cache/pip", "/root/.npm"]
 commands = [
     "apt-get update",
-    "apt-get install -y --no-install-recommends python3-dev gcc"
+    "apt-get install -y --no-install-recommends python3-dev gcc nodejs npm"
 ]
 
 [phases.install]
@@ -10,8 +10,5 @@ commands = [
     "python -m pip install --user --no-cache-dir -r requirements.txt"
 ]
 
-[phases.build]
-commands = []
-
 [start]
-command = "python -m uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"
+cmd = "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"
