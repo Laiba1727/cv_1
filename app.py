@@ -11,6 +11,8 @@ import uvicorn
 from dotenv import load_dotenv
 import requests
 import zipfile
+import re
+import json
 
 # Load environment variables
 load_dotenv()
@@ -49,7 +51,6 @@ def extract_text_from_docx(file_content: bytes):
         return f"Error reading DOCX: {e}"
 
 def get_file_type(file_content: bytes):
-    """Simplified file type detection without magic"""
     if file_content.startswith(b'%PDF'):
         return 'pdf'
     elif file_content.startswith(b'PK\x03\x04'):
@@ -62,9 +63,18 @@ def get_file_type(file_content: bytes):
             pass
     return 'unknown'
 
+def extract_json_from_response(text: str):
+    try:
+        match = re.search(r'{.*}', text, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+        return {"result": text}
+    except Exception as e:
+        return {"error": f"Failed to parse JSON: {str(e)}", "raw": text}
+
 def analyze_resume(file_content: bytes, target_company: str, interview_type: str):
     if not file_content:
-        return "Please upload a resume file."
+        return {"error": "Please upload a resume file."}
 
     file_type = get_file_type(file_content)
     print(f"Detected file type: {file_type}")
@@ -74,18 +84,18 @@ def analyze_resume(file_content: bytes, target_company: str, interview_type: str
     elif file_type == 'docx':
         resume_text = extract_text_from_docx(file_content)
     else:
-        return "Unsupported file format. Please upload a PDF or DOCX file."
+        return {"error": "Unsupported file format. Please upload a PDF or DOCX file."}
 
     if "Error" in resume_text:
-        return resume_text
+        return {"error": resume_text}
 
     prompt = f"""
     Analyze the following resume for a candidate targeting {target_company} for a {interview_type} interview.
-    Provide the following:
+    Provide the following in JSON format:
     1. An overall score out of 10.
     2. Scores out of 10 for clarity, relevance, skills, experience, and formatting.
     3. Specific suggestions for improvement.
-    
+
     Resume:
     {resume_text}
     """
@@ -93,17 +103,16 @@ def analyze_resume(file_content: bytes, target_company: str, interview_type: str
     try:
         model = genai.GenerativeModel("gemini-1.5-pro-002")
         response = model.generate_content(prompt)
-        return response.text.strip() if response.text else "No response generated."
+        return extract_json_from_response(response.text.strip())
     except Exception as e:
-        return f"Error generating AI response: {e}"
+        return {"error": f"Error generating AI response: {e}"}
 
-# FastAPI Endpoints
 @app.post('/api/analyze')
 async def analyze(file: UploadFile = File(...), target_company: str = Form(...), interview_type: str = Form(...)):
     try:
         file_content = await file.read()
         result = analyze_resume(file_content, target_company, interview_type)
-        return JSONResponse(content={'result': result})
+        return JSONResponse(content=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -111,14 +120,13 @@ async def analyze(file: UploadFile = File(...), target_company: str = Form(...),
 async def health_check():
     return {"status": "healthy", "version": "1.0"}
 
-# Gradio Interface
 def create_gradio_interface():
     def gradio_interface(file: UploadFile, target_company: str, interview_type: str):
         try:
             file_content = file.read()
             return analyze_resume(file_content, target_company, interview_type)
         except Exception as e:
-            return f"Error processing file: {str(e)}"
+            return {"error": f"Error processing file: {str(e)}"}
 
     with gr.Blocks() as interface:
         gr.Markdown("## Resume Analyzer")
@@ -126,27 +134,27 @@ def create_gradio_interface():
             file_input = gr.File(label="Upload Resume (PDF/DOCX)")
             company_input = gr.Textbox(label="Target Company")
             interview_input = gr.Radio(["Technical", "Behavioral", "Mixed"], label="Type of Interview")
-            output = gr.Textbox(label="Analysis Result")
+            output = gr.JSON(label="Analysis Result")
             analyze_btn = gr.Button("Analyze")
-            
+
             analyze_btn.click(
                 fn=gradio_interface,
                 inputs=[file_input, company_input, interview_input],
                 outputs=output
             )
-        
+
         with gr.Tab("API Tester"):
             gr.Markdown("### Test FastAPI Endpoint")
             api_output = gr.Textbox(label="API Response")
             test_api_btn = gr.Button("Test /health Endpoint")
-            
+
             def test_api():
                 try:
                     response = requests.get(f"http://localhost:{os.getenv('PORT', 8000)}/health")
                     return f"Status Code: {response.status_code}\nResponse: {response.text}"
                 except Exception as e:
                     return f"API Test Failed: {str(e)}"
-            
+
             test_api_btn.click(fn=test_api, outputs=api_output)
 
     return interface
@@ -154,10 +162,8 @@ def create_gradio_interface():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     if os.getenv("RAILWAY_ENVIRONMENT"):
-        # Production mode - FastAPI only
         uvicorn.run(app, host="0.0.0.0", port=port)
     else:
-        # Development mode - With Gradio UI
         gradio_interface = create_gradio_interface()
         gradio_interface.launch(
             server_name="0.0.0.0",
